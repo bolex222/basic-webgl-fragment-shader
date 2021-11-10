@@ -8,6 +8,7 @@ precision mediump float;
 uniform vec2 u_resolution;
 uniform vec2 u_mouse;
 uniform float u_time;
+uniform sampler2D texture;
 
 // noise func found on internet
 float rand(vec2 co){
@@ -20,6 +21,8 @@ void main() {
     vec2 Muv = u_mouse.xy / u_resolution.xy;
     Muv.y = 1. - Muv.y;
 
+    // image
+    vec4 text2d = texture2D(texture, vec2(uv.x, 1. - uv.y));
     // noise
     vec3 noise = vec3(rand(vec2(uv.x, uv.y + sin(u_time * 1000.))));
 
@@ -58,8 +61,9 @@ void main() {
     vec3 pinkColor = vec3(pinkWave, pinkWave * 0.75, pinkWave * 0.8);
 
     // final result
-    vec3 color = (redColor + blueColor + greenColor + orangeColor + yellowColor + pinkColor + purpleColor) * noise * mouse;
+    vec3 color = (redColor + blueColor + greenColor + orangeColor + yellowColor + pinkColor + purpleColor);// * noise; //* mouse;
 
 
-    gl_FragColor = vec4(color, 1.);
+//    gl_FragColor = vec4(color, 1.);
+    gl_FragColor = vec4(text2d.xyz * color.xyz, 1.);
 }

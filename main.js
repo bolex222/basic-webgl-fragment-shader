@@ -1,5 +1,9 @@
 import './style.css'
 
+function isPowerOf2(value) {
+  return (value & (value - 1)) === 0;
+}
+
 async function main () {
   // GET CONTEXT
   const canvas = document.getElementById('webgl')
@@ -34,6 +38,14 @@ async function main () {
   gl.bufferData(gl.ARRAY_BUFFER,
     new Float32Array(positions),
     gl.STATIC_DRAW);
+
+  const text = await createTexture(gl, './image/image.jpg')
+
+  const textLoc = gl.getUniformLocation(program, 'texture')
+  gl.uniform1i(textLoc, 7)
+
+  gl.activeTexture(gl.TEXTURE7);
+  gl.bindTexture(gl.TEXTURE_2D, text);
 
   const resLocation = gl.getUniformLocation(program, 'u_resolution')
   gl.uniform2f(resLocation,  500, 500)
@@ -71,6 +83,47 @@ function createShader (gl, source, type) {
   gl.compileShader(shader)
 
   return shader
+}
+
+/**
+ *
+ * @param gl
+ * @param source
+ * @return {Promise<WebGLTexture>}
+ */
+function createTexture (gl, source) {
+  return new Promise(resolve => {
+    const texture = gl.createTexture()
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+
+    const level = 0
+    const internalFormat = gl.RGBA
+    const srcFormat = gl.RGBA
+    const srcType = gl.UNSIGNED_BYTE
+
+    const image = new Image()
+    image.onload = () => {
+      gl.bindTexture(
+        gl.TEXTURE_2D, texture)
+      gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+        srcFormat,
+        srcType,
+        image)
+      if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
+        // Yes, it's a power of 2. Generate mips.
+        gl.generateMipmap(gl.TEXTURE_2D);
+      } else {
+        // No, it's not a power of 2. Turn off mips and set
+        // wrapping to clamp to edge
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      }
+
+      resolve(texture)
+    }
+    image.src = source
+  })
 }
 
 main().then()
